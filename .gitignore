@@ -1,0 +1,15 @@
+# Delphi / Lazarus temporary and compilation files
+*.dcu
+*.ddp
+*.local
+*.identcache
+*.projdata
+*.tvsconfig
+*.~*
+__recovery/
+bin/
+lib/
+backup/
+*.o
+*.ppu
+*.compiled
