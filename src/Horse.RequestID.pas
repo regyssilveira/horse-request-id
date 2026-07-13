@@ -38,6 +38,54 @@ function RequestID(const AHeaderName: string): THorseCallback; overload;
 
 implementation
 
+function GenerateRequestID: string;
+var
+  LGUID: TGUID;
+begin
+  if CreateGUID(LGUID) = 0 then
+  begin
+    Result := GUIDToString(LGUID);
+    Result := StringReplace(Result, '{', '', [rfReplaceAll]);
+    Result := StringReplace(Result, '}', '', [rfReplaceAll]);
+  end
+  else
+    Result := '';
+end;
+
+{$IF DEFINED(FPC)}
+var
+  FConfig: THorseRequestIDConfig;
+
+procedure Middleware(Req: THorseRequest; Res: THorseResponse; Next: TNextProc);
+var
+  LID: string;
+  LHeader: string;
+begin
+  LHeader := FConfig.HeaderName;
+  if LHeader = '' then
+    LHeader := 'X-Request-ID';
+
+  // 1. Tentar obter do Header Customizado, X-Request-ID ou X-Correlation-ID
+  LID := Req.Headers[LHeader];
+  if LID = '' then
+    LID := Req.Headers['X-Request-ID'];
+  if LID = '' then
+    LID := Req.Headers['X-Correlation-ID'];
+
+  // 2. Se não existir, gerar um novo
+  if LID = '' then
+    LID := GenerateRequestID;
+
+  // 3. Registrar no escopo da requisição
+  Req.Services.Add(THorseRequestID, THorseRequestID.Create(LID));
+
+  // 4. Injetar na resposta
+  Res.RawWebResponse.SetCustomHeader(LHeader, LID);
+
+  Next();
+end;
+{$ENDIF}
+
 { THorseRequestIDConfig }
 
 class function THorseRequestIDConfig.Default: THorseRequestIDConfig;
@@ -66,23 +114,14 @@ begin
   end;
 end;
 
-function GenerateRequestID: string;
-var
-  LGUID: TGUID;
-begin
-  if CreateGUID(LGUID) = 0 then
-  begin
-    Result := GUIDToString(LGUID);
-    Result := StringReplace(Result, '{', '', [rfReplaceAll]);
-    Result := StringReplace(Result, '}', '', [rfReplaceAll]);
-  end
-  else
-    Result := '';
-end;
 
 function RequestID(const AConfig: THorseRequestIDConfig): THorseCallback;
 begin
-  Result := procedure(Req: THorseRequest; Res: THorseResponse; Next: {$IF DEFINED(FPC)}TNextProc{$ELSE}TProc{$ENDIF})
+  {$IF DEFINED(FPC)}
+  FConfig := AConfig;
+  Result := Middleware;
+  {$ELSE}
+  Result := procedure(Req: THorseRequest; Res: THorseResponse; Next: TProc)
   var
     LID: string;
     LHeader: string;
@@ -110,6 +149,7 @@ begin
 
     Next();
   end;
+  {$ENDIF}
 end;
 
 function RequestID: THorseCallback;

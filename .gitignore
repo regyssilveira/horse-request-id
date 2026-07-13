@@ -13,3 +13,10 @@ backup/
 *.o
 *.ppu
 *.compiled
+*.exe
+dunitx-results.xml
+*.or
+tests/Tests
+samples/console/Sample
+
+
