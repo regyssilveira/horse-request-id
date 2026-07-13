@@ -3,7 +3,7 @@
   "description": "Middleware para geracao e rastreabilidade de Request ID no framework Horse",
   "version": "1.0.0",
   "homepage": "https://github.com/regyssilveira/horse-request-id",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "mainsrc": "src/",
   "browsingpath": "src/",
   "dependencies": {
